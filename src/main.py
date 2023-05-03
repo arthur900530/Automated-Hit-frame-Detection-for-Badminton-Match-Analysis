@@ -3,6 +3,7 @@ from ai_coach import AICoach
 def main():
     args = {
         'sacnn_path': 'src/models/sacnn.pt',
+        'court_kpRCNN_path': 'src/models/court_kpRCNN.pth',
         'saqueue length': 5,
         'video_directory': 'videos',
     }

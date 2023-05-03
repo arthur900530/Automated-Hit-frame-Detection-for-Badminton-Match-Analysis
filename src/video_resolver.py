@@ -64,11 +64,15 @@ class VideoResolver(object):
         self.args = args
         self.get_videos()
         self.setup_sa_queue()
+        self.setup_frame_processor()
         self.sacnn = SACNNContainer(self.args)
         # self.opt = OptimusPrimeContainer(self.args)
 
     def setup_sa_queue(self):
         self.sa_queue = ShotAngleQueue(self.args['saqueue length'])
+    
+    def setup_frame_processor(self):
+        self.frame_processor = FrameProcessor(self.args)
 
     def get_videos(self):
         self.video_paths = utils.get_path(self.args['video_directory'])
@@ -83,10 +87,13 @@ class VideoResolver(object):
         frame_height = int(cap.get(4))
         total_frame_count = int(cap.get(7))
         fps = cap.get(5)
+
         time_rate = 0.1
         frame_rate = round(int(fps) * time_rate)
         frame_count, saved_count = 0, 0
         target_save_count = int(total_frame_count / frame_rate)
+
+        zero_count = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -108,12 +115,16 @@ class VideoResolver(object):
                         sa, pil_image, frame = frame_info[0], frame_info[1], frame_info[2]
                         if sa_condition == 0:
                             stat_string = '0 -> 0'
+                            zero_count += 1                            
                         if sa_condition == 1:
                             stat_string = '0 -> 1'
+
                         if sa_condition == 2:
                             stat_string = '1 -> 1'
+
                         if sa_condition == 3:
                             stat_string = '1 -> 0'
+
 
                     saved_count += 1
                     print(f'{saved_count} / {target_save_count}, {stat_string}')
