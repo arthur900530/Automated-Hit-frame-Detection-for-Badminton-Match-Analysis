@@ -23,9 +23,9 @@ class ShotAngleQueue(object):
             # return sa, pil_image, frame
 
 class VideoResolver(object):
-    def __init__(self, args, video_dir):
+    def __init__(self, args):
         self.args = args
-        self.get_videos(video_dir)
+        self.get_videos()
         self.setup_sa_queue()
         self.sacnn = SACNNContainer(self.args)
         # self.opt = OptimusPrimeContainer(self.args)
@@ -33,8 +33,8 @@ class VideoResolver(object):
     def setup_sa_queue(self):
         self.sa_queue = ShotAngleQueue(self.args['saqueue length'])
 
-    def get_videos(self, vid_dir):
-        self.video_paths = utils.get_path(vid_dir)
+    def get_videos(self):
+        self.video_paths = utils.get_path(self.args['video_directory'])
 
     def start_resolve(self):
         for path in self.video_paths:
@@ -69,14 +69,14 @@ class VideoResolver(object):
         cap.release()
 
 class AICoach(object):
-    def __init__(self, args, video_dir):
+    def __init__(self, args):
         """
         """
         self.args = args
-        self.setup_resolver(video_dir)
+        self.setup_resolver()
         
-    def setup_resolver(self, video_dir):
-        self.vid_resolver = VideoResolver(self.args, video_dir)
+    def setup_resolver(self):
+        self.vid_resolver = VideoResolver(self.args)
     
     def start_resolver(self):
         print('Start Resolving...')
