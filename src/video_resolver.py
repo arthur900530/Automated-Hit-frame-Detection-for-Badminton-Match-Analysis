@@ -29,6 +29,9 @@ class ShotAngleQueue(object):
 
             return first_info, sa_condition
 
+    def get(self, index):
+        return self.queue[index]
+
     def check_sa_conditon(self, sa):
         '''
         return sa, cond in {0, 1, 2, 3}
@@ -118,13 +121,14 @@ class VideoResolver(object):
                             zero_count += 1                            
                         if sa_condition == 1:
                             stat_string = '0 -> 1'
+                            if self.frame_processor.court_points == None:
+                                self.frame_processor.get_court_data(self.sa_queue.get(2)[2], frame_height)
 
                         if sa_condition == 2:
                             stat_string = '1 -> 1'
 
                         if sa_condition == 3:
                             stat_string = '1 -> 0'
-
 
                     saved_count += 1
                     print(f'{saved_count} / {target_save_count}, {stat_string}')
