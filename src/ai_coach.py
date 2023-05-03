@@ -8,6 +8,7 @@ class ShotAngleQueue(object):
     def __init__(self, max_len):
         self.max_len = max_len
         self.queue = []
+        self.last_sa = 0
     
     def push(self, frame_info):
         if len(self.queue) < self.max_len:
@@ -15,12 +16,30 @@ class ShotAngleQueue(object):
             return None
         else:
             first_info = self.queue.pop(0)
+            if first_info[0] != self.last_sa:
+                sa, sa_changed = self.check_type(first_info[0])
+                first_info[0] = sa
+
             self.queue.append(frame_info)
-            return first_info
-            # sa = first_info[0]
-            # pil_image = first_info[1]
-            # frame = first_info[2]
-            # return sa, pil_image, frame
+
+            return first_info, sa_changed
+
+    def check_type(self, sa):
+        sum = 0 + sa
+        if self.last_sa == 1:              # sa == 0
+            for info in self.queue:
+                sum += info[0]
+            if sum <= (self.max_len / 2):
+                return 0, True             # bool indicates whether the sa changed or not
+            else:
+                return 1, False
+        else:                              # sa == 1
+            for info in self.queue:
+                sum += info[0]
+            if sum >= (self.max_len / 2):
+                return 1, True
+            else:
+                return 0, False
 
 class VideoResolver(object):
     def __init__(self, args):
@@ -58,9 +77,10 @@ class VideoResolver(object):
                     seceneImg = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
                     sa = self.sacnn.predict(seceneImg)
-                    frame_info = self.sa_queue.push((sa, pil_image, frame))
+                    frame_info, sa_changed = self.sa_queue.push((sa, pil_image, frame))
                     if frame_info:
                         sa, pil_image, frame = frame_info[0], frame_info[1], frame_info[2]
+                        
                     saved_count += 1
                     print(saved_count, ' / ', target_save_count)
                 frame_count += 1
