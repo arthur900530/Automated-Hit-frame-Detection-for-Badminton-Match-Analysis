@@ -121,8 +121,8 @@ class VideoResolver(object):
                             zero_count += 1                            
                         if sa_condition == 1:
                             stat_string = '0 -> 1'
-                            if self.frame_processor.court_points == None:
-                                self.frame_processor.get_court_data(self.sa_queue.get(2)[2], frame_height)
+                            if not self.frame_processor.got_info:
+                                self.frame_processor.get_court_info(self.sa_queue.get(2)[2], frame_height)
 
                         if sa_condition == 2:
                             stat_string = '1 -> 1'
