@@ -19,9 +19,7 @@ class ShotAngleQueue(object):
             return None, None
         else:
             first_info = self.queue.pop(0)
-            
-            # if first_info[0] != self.last_sa:
-            sa, sa_condition = self.check_sa_conditon(first_info[0])
+            sa, sa_condition = self.__check_sa_conditon(first_info[0])
             self.last_sa = sa
             first_info[0] = sa
 
@@ -32,7 +30,7 @@ class ShotAngleQueue(object):
     def get(self, index):
         return self.queue[index]
 
-    def check_sa_conditon(self, sa):
+    def __check_sa_conditon(self, sa):
         '''
         return sa, cond in {0, 1, 2, 3}
         cond :  last sa  ->   sa
@@ -65,26 +63,26 @@ class ShotAngleQueue(object):
 class VideoResolver(object):
     def __init__(self, args):
         self.args = args
-        self.get_videos()
-        self.setup_sa_queue()
-        self.setup_frame_processor()
-        self.sacnn = SACNNContainer(self.args)
-        # self.opt = OptimusPrimeContainer(self.args)
+        self.__setup_videos()
+        self.__setup_sa_queue()
+        self.__setup_frame_processor()
+        self.__sacnn = SACNNContainer(self.args)
+        # self.__opt = OptimusPrimeContainer(self.args)
 
-    def setup_sa_queue(self):
-        self.sa_queue = ShotAngleQueue(self.args['saqueue length'])
+    def __setup_sa_queue(self):
+        self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
     
-    def setup_frame_processor(self):
-        self.frame_processor = FrameProcessor(self.args)
+    def __setup_frame_processor(self):
+        self.__frame_processor = FrameProcessor(self.args)
 
-    def get_videos(self):
-        self.video_paths = utils.get_path(self.args['video_directory'])
+    def __setup_videos(self):
+        self.__video_paths = utils.get_path(self.args['video_directory'])
 
     def start_resolve(self):
-        for path in self.video_paths:
-            self.resolve(path)
+        for path in self.__video_paths:
+            self.__resolve(path)
 
-    def resolve(self, vid_path):
+    def __resolve(self, vid_path):
         cap = cv2.VideoCapture(vid_path)
         frame_width = int(cap.get(3))
         frame_height = int(cap.get(4))
@@ -103,9 +101,8 @@ class VideoResolver(object):
             if ret:
                 if frame_count % frame_rate == 0:
                     seceneImg = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-                    pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-                    sa = self.sacnn.predict(seceneImg)
-                    frame_info, sa_condition = self.sa_queue.push([sa, pil_image, frame])
+                    sa = self.__sacnn.predict(seceneImg)
+                    frame_info, sa_condition = self.__sa_queue.push([sa, frame])
                     '''
                     sa_condition:
                     0  ->  0 to 0
@@ -115,17 +112,19 @@ class VideoResolver(object):
                     '''
                     stat_string = 'Added to Queue'
                     if frame_info:
-                        sa, pil_image, frame = frame_info[0], frame_info[1], frame_info[2]
+                        sa, frame = frame_info[0], frame_info[1]
                         if sa_condition == 0:
                             stat_string = '0 -> 0'
                             zero_count += 1                            
                         if sa_condition == 1:
                             stat_string = '0 -> 1'
-                            if not self.frame_processor.got_info:
-                                self.frame_processor.get_court_info(self.sa_queue.get(2)[2], frame_height)
+                            if not self.__frame_processor.got_info:
+                                self.__frame_processor.get_court_info(self.__sa_queue.get(2)[-1], frame_height)
+                            self.__frame_processor.add_frame(frame)
 
                         if sa_condition == 2:
                             stat_string = '1 -> 1'
+                            self.__frame_processor.add_frame(frame)
 
                         if sa_condition == 3:
                             stat_string = '1 -> 0'

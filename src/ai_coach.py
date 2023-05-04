@@ -6,13 +6,13 @@ class AICoach(object):
         """
         """
         self.args = args
-        self.setup_resolver()
+        self.__setup_resolver()
         
-    def setup_resolver(self):
-        self.vid_resolver = VideoResolver(self.args)
+    def __setup_resolver(self):
+        self.__vid_resolver = VideoResolver(self.args)
     
     def start_resolver(self):
         print('Start Resolving...')
-        self.vid_resolver.start_resolve()
+        self.__vid_resolver.start_resolve()
     
 
