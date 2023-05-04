@@ -21,6 +21,112 @@ class FrameProcessor(object):
         self.__setup_court_kpRCNN()
         self.__setup_kpRCNN()
 
+    def add_frame(self, frame):
+        outputs = self.__human_detection(frame)
+        result = self.__player_detection(outputs)
+        if result:
+            position, filtered_outputs = result
+            for points in filtered_outputs:
+                for i, joints in enumerate(points):
+                    points[i] = joints[0:2]
+            self.__player_joint_list.append(filtered_outputs)
+            frame = self.__draw_key_points(position, filtered_outputs, frame)
+        else:
+            self.__player_joint_list.append(-1)  # indicates that the sa is 1 but the players aren't in court
+
+        self.__drawn_img_list.append(frame)
+
+    def __draw_key_points(self, position, filtered_outputs, image):
+        edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
+                 (7, 9), (5, 11), (11, 13), (13, 15), (6, 12), (12, 14), (14, 16), (5, 6)]
+        c_edges = [[0, 1], [0, 5], [1, 2], [1, 6], [2, 3], [2, 7], [3, 4], [3, 8], [4, 9],
+                   [5, 6], [5, 10], [6, 7], [6, 11], [7, 8], [7, 12], [8, 9], [8, 13], [9, 14],
+                   [10, 11], [10, 15], [11, 12], [11, 16], [12, 13], [12, 17], [13, 14], [13, 18],
+                   [14, 19], [15, 16], [15, 20], [16, 17], [16, 21], [17, 18], [17, 22], [18, 19],
+                   [18, 23], [19, 24], [20, 21], [20, 25], [21, 22], [21, 26], [22, 23], [22, 27],
+                   [23, 24], [23, 28], [24, 29], [25, 26], [25, 30], [26, 27], [26, 31], [27, 28],
+                   [27, 32], [28, 29], [28, 33], [29, 34], [30, 31], [31, 32], [32, 33], [33, 34]]
+        top_color_edge = (255, 0, 0)
+        bot_color_edge = (0, 0, 255)
+        top_color_joint = (115, 47, 14)
+        bot_color_joint = (35, 47, 204)
+        court_color_edge = (53, 195, 242)
+        court_color_kps = (5, 135, 242)
+
+        for i in range(2):
+            pos = position[i]
+            color = top_color_edge if i == 0 else bot_color_edge
+            color_joint = top_color_joint if i == 0 else bot_color_joint
+           
+            keypoints = np.array(filtered_outputs[pos])  # 17, 2
+            keypoints = keypoints[:, :].reshape(-1, 2)
+            overlay = image.copy()
+
+            # draw the court
+            for e in c_edges:
+                cv2.line(overlay, (int(self.__multi_points[e[0]][0]), int(self.__multi_points[e[0]][1])),
+                                  (int(self.__multi_points[e[1]][0]), int(self.__multi_points[e[1]][1])),
+                                  court_color_edge, 2, lineType=cv2.LINE_AA)
+            for kps in [self.__multi_points]:
+                for kp in kps:
+                    cv2.circle(overlay, tuple(kp), 2, court_color_kps, 10)
+                    
+            alpha = 0.4
+            image = cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0)
+
+            for p in range(keypoints.shape[0]):
+                cv2.circle(image, (int(keypoints[p, 0]), int(keypoints[p, 1])), 3, color_joint, thickness=-1,
+                            lineType=cv2.FILLED)
+
+            for e in edges:
+                cv2.line(image, (int(keypoints[e, 0][0]), int(keypoints[e, 1][0])),
+                                (int(keypoints[e, 0][1]), int(keypoints[e, 1][1])),
+                                color, 2, lineType=cv2.LINE_AA)
+            return image
+  
+    def get_court_info(self, img, frame_height):
+        img = F.to_tensor(img)
+        img = img.unsqueeze(0)
+        img = img.to(self.device)
+        output = self.__court_kpRCNN(img)
+        scores = output[0]['scores'].detach().cpu().numpy()
+        high_scores_idxs = np.where(scores > 0.7)[0].tolist()
+        post_nms_idxs = torchvision.ops.nms(output[0]['boxes'][high_scores_idxs],
+                                            output[0]['scores'][high_scores_idxs], 0.3).cpu().numpy()
+        keypoints = []
+        for kps in output[0]['keypoints'][high_scores_idxs][post_nms_idxs].detach().cpu().numpy():
+            keypoints.append([list(map(int, kp[:2])) for kp in kps])
+
+        self.__true_court_points = copy.deepcopy(keypoints[0])
+
+        '''
+        l -> left, r -> right, y = a * x + b
+        '''
+        l_a = (self.__true_court_points[0][1] - self.__true_court_points[4][1]) / (self.__true_court_points[0][0] - self.__true_court_points[4][0])
+        l_b = self.__true_court_points[0][1] - l_a * self.__true_court_points[0][0]
+        r_a = (self.__true_court_points[1][1] - self.__true_court_points[5][1]) / (self.__true_court_points[1][0] - self.__true_court_points[5][0])
+        r_b = self.__true_court_points[1][1] - r_a * self.__true_court_points[1][0]
+        mp_y = (self.__true_court_points[2][1] + self.__true_court_points[3][1]) / 2
+
+        self.__court_info = [l_a, l_b, r_a, r_b, mp_y]
+
+        self.__multi_points = self.__partition(self.__correction()).tolist()
+
+        keypoints[0][0][0] -= 80
+        keypoints[0][0][1] -= 80
+        keypoints[0][1][0] += 80
+        keypoints[0][1][1] -= 80
+        keypoints[0][2][0] -= 80
+        keypoints[0][3][0] += 80
+        keypoints[0][4][0] -= 80
+        keypoints[0][4][1] = min(keypoints[0][4][1] + 80, frame_height - 40)
+        keypoints[0][5][0] += 80
+        keypoints[0][5][1] = min(keypoints[0][5][1] + 80, frame_height - 40)
+
+        self.__extended_court_points = keypoints[0]
+
+        self.got_info = True
+
     def __setup_court_kpRCNN(self):
         self.__court_kpRCNN = torch.load(self.args['court_kpRCNN_path'])
         self.__court_kpRCNN.to(self.device).eval()
@@ -28,13 +134,6 @@ class FrameProcessor(object):
     def __setup_kpRCNN(self):
         self.__kpRCNN = torch.load(self.args['kpRCNN_path'])
         self.__kpRCNN.to(self.device).eval()
-
-    def add_frame(self, frame):
-        outputs = self.__human_detection(frame)
-        conform, filtered_outputs = self.__player_detection(outputs)
-        print('Conform: ', conform)
-        frame = self.__draw_key_points(filtered_outputs, frame)
-        self.__drawn_img_list.append(frame)
 
     def __human_detection(self, frame):
         pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
@@ -50,12 +149,15 @@ class FrameProcessor(object):
 
         if in_court_indices:
             conform, combination = self.__check_top_bot_court(in_court_indices, boxes)
-            filtered_joint.append(joints[in_court_indices[combination[0]]].tolist())
-            filtered_joint.append(joints[in_court_indices[combination[1]]].tolist())
-            filtered_joint = self.__top_bottom(filtered_joint)
-            return conform, filtered_joint
+            if conform:
+                filtered_joint.append(joints[in_court_indices[combination[0]]].tolist())
+                filtered_joint.append(joints[in_court_indices[combination[1]]].tolist())
+                position = self.__top_bottom(filtered_joint)
+                return (position, filtered_joint)
+            else:
+                return None
         else:
-            return None, None
+            return None
 
     def __check_top_bot_court(self, indices, boxes):
         '''
@@ -114,62 +216,6 @@ class FrameProcessor(object):
             top = 0
             bottom = 1
         return top, bottom
-
-    def __draw_key_points(self, filtered_outputs, frame):
-        edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
-                 (7, 9), (5, 11), (11, 13), (13, 15), (6, 12), (12, 14), (14, 16), (5, 6)]
-        c_edges = [[0, 1], [0, 5], [1, 2], [1, 6], [2, 3], [2, 7], [3, 4], [3, 8], [4, 9],
-                   [5, 6], [5, 10], [6, 7], [6, 11], [7, 8], [7, 12], [8, 9], [8, 13], [9, 14],
-                   [10, 11], [10, 15], [11, 12], [11, 16], [12, 13], [12, 17], [13, 14], [13, 18],
-                   [14, 19], [15, 16], [15, 20], [16, 17], [16, 21], [17, 18], [17, 22], [18, 19],
-                   [18, 23], [19, 24], [20, 21], [20, 25], [21, 22], [21, 26], [22, 23], [22, 27],
-                   [23, 24], [23, 28], [24, 29], [25, 26], [25, 30], [26, 27], [26, 31], [27, 28],
-                   [27, 32], [28, 29], [28, 33], [29, 34], [30, 31], [31, 32], [32, 33], [33, 34]]
-        
-        return frame
-    
-    def get_court_info(self, img, frame_height):
-        img = F.to_tensor(img)
-        img = img.unsqueeze(0)
-        img = img.to(self.device)
-        output = self.__court_kpRCNN(img)
-        scores = output[0]['scores'].detach().cpu().numpy()
-        high_scores_idxs = np.where(scores > 0.7)[0].tolist()
-        post_nms_idxs = torchvision.ops.nms(output[0]['boxes'][high_scores_idxs],
-                                            output[0]['scores'][high_scores_idxs], 0.3).cpu().numpy()
-        keypoints = []
-        for kps in output[0]['keypoints'][high_scores_idxs][post_nms_idxs].detach().cpu().numpy():
-            keypoints.append([list(map(int, kp[:2])) for kp in kps])
-
-        self.__true_court_points = copy.deepcopy(keypoints[0])
-
-        '''
-        l -> left, r -> right, y = a * x + b
-        '''
-        l_a = (self.__true_court_points[0][1] - self.__true_court_points[4][1]) / (self.__true_court_points[0][0] - self.__true_court_points[4][0])
-        l_b = self.__true_court_points[0][1] - l_a * self.__true_court_points[0][0]
-        r_a = (self.__true_court_points[1][1] - self.__true_court_points[5][1]) / (self.__true_court_points[1][0] - self.__true_court_points[5][0])
-        r_b = self.__true_court_points[1][1] - r_a * self.__true_court_points[1][0]
-        mp_y = (self.__true_court_points[2][1] + self.__true_court_points[3][1]) / 2
-
-        self.__court_info = [l_a, l_b, r_a, r_b, mp_y]
-
-        self.__multi_points = self.__partition(self.__correction()).tolist()
-
-        keypoints[0][0][0] -= 80
-        keypoints[0][0][1] -= 80
-        keypoints[0][1][0] += 80
-        keypoints[0][1][1] -= 80
-        keypoints[0][2][0] -= 80
-        keypoints[0][3][0] += 80
-        keypoints[0][4][0] -= 80
-        keypoints[0][4][1] = min(keypoints[0][4][1] + 80, frame_height - 40)
-        keypoints[0][5][0] += 80
-        keypoints[0][5][1] = min(keypoints[0][5][1] + 80, frame_height - 40)
-
-        self.__extended_court_points = keypoints[0]
-
-        self.got_info = True
         
     def __correction(self):
         court_kp = np.array(self.__true_court_points)

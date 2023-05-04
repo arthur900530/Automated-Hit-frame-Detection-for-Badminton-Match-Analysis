@@ -69,6 +69,10 @@ class VideoResolver(object):
         self.__sacnn = SACNNContainer(self.args)
         # self.__opt = OptimusPrimeContainer(self.args)
 
+    def start_resolve(self):
+        for path in self.__video_paths:
+            self.__resolve(path)
+
     def __setup_sa_queue(self):
         self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
     
@@ -77,10 +81,6 @@ class VideoResolver(object):
 
     def __setup_videos(self):
         self.__video_paths = utils.get_path(self.args['video_directory'])
-
-    def start_resolve(self):
-        for path in self.__video_paths:
-            self.__resolve(path)
 
     def __resolve(self, vid_path):
         cap = cv2.VideoCapture(vid_path)
