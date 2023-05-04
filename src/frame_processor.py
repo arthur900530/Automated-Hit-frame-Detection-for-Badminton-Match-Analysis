@@ -16,10 +16,54 @@ class FrameProcessor(object):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.args = args
         self.got_info = False
+        self.__rally_count = 0
         self.__drawn_img_list = []
         self.__player_joint_list = []
         self.__setup_court_kpRCNN()
         self.__setup_kpRCNN()
+
+    def get_court_info(self, img, frame_height):
+        img = F.to_tensor(img)
+        img = img.unsqueeze(0)
+        img = img.to(self.device)
+        output = self.__court_kpRCNN(img)
+        scores = output[0]['scores'].detach().cpu().numpy()
+        high_scores_idxs = np.where(scores > 0.7)[0].tolist()
+        post_nms_idxs = torchvision.ops.nms(output[0]['boxes'][high_scores_idxs],
+                                            output[0]['scores'][high_scores_idxs], 0.3).cpu().numpy()
+        keypoints = []
+        for kps in output[0]['keypoints'][high_scores_idxs][post_nms_idxs].detach().cpu().numpy():
+            keypoints.append([list(map(int, kp[:2])) for kp in kps])
+
+        self.__true_court_points = copy.deepcopy(keypoints[0])
+
+        '''
+        l -> left, r -> right, y = a * x + b
+        '''
+        l_a = (self.__true_court_points[0][1] - self.__true_court_points[4][1]) / (self.__true_court_points[0][0] - self.__true_court_points[4][0])
+        l_b = self.__true_court_points[0][1] - l_a * self.__true_court_points[0][0]
+        r_a = (self.__true_court_points[1][1] - self.__true_court_points[5][1]) / (self.__true_court_points[1][0] - self.__true_court_points[5][0])
+        r_b = self.__true_court_points[1][1] - r_a * self.__true_court_points[1][0]
+        mp_y = (self.__true_court_points[2][1] + self.__true_court_points[3][1]) / 2
+
+        self.__court_info = [l_a, l_b, r_a, r_b, mp_y]
+
+        self.__multi_points = self.__partition(self.__correction()).tolist()
+
+        keypoints[0][0][0] -= 80
+        keypoints[0][0][1] -= 80
+        keypoints[0][1][0] += 80
+        keypoints[0][1][1] -= 80
+        keypoints[0][2][0] -= 80
+        keypoints[0][3][0] += 80
+        keypoints[0][4][0] -= 80
+        keypoints[0][4][1] = min(keypoints[0][4][1] + 80, frame_height - 40)
+        keypoints[0][5][0] += 80
+        keypoints[0][5][1] = min(keypoints[0][5][1] + 80, frame_height - 40)
+
+        self.__extended_court_points = keypoints[0]
+
+        self.got_info = True
 
     def add_frame(self, frame):
         outputs = self.__human_detection(frame)
@@ -35,6 +79,15 @@ class FrameProcessor(object):
             self.__player_joint_list.append(-1)  # indicates that the sa is 1 but the players aren't in court
 
         self.__drawn_img_list.append(frame)
+
+    def start_new_rally(self):
+        self.__rally_count += 1
+        dil = copy.deepcopy(self.__drawn_img_list)
+        pjl = copy.deepcopy(self.__player_joint_list)
+        self.__drawn_img_list = []
+        self.__player_joint_list = []
+
+        return self.__rally_count, dil, pjl
 
     def __draw_key_points(self, position, filtered_outputs, image):
         edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
@@ -82,51 +135,8 @@ class FrameProcessor(object):
                 cv2.line(image, (int(keypoints[e, 0][0]), int(keypoints[e, 1][0])),
                                 (int(keypoints[e, 0][1]), int(keypoints[e, 1][1])),
                                 color, 2, lineType=cv2.LINE_AA)
-            return image
+        return image
   
-    def get_court_info(self, img, frame_height):
-        img = F.to_tensor(img)
-        img = img.unsqueeze(0)
-        img = img.to(self.device)
-        output = self.__court_kpRCNN(img)
-        scores = output[0]['scores'].detach().cpu().numpy()
-        high_scores_idxs = np.where(scores > 0.7)[0].tolist()
-        post_nms_idxs = torchvision.ops.nms(output[0]['boxes'][high_scores_idxs],
-                                            output[0]['scores'][high_scores_idxs], 0.3).cpu().numpy()
-        keypoints = []
-        for kps in output[0]['keypoints'][high_scores_idxs][post_nms_idxs].detach().cpu().numpy():
-            keypoints.append([list(map(int, kp[:2])) for kp in kps])
-
-        self.__true_court_points = copy.deepcopy(keypoints[0])
-
-        '''
-        l -> left, r -> right, y = a * x + b
-        '''
-        l_a = (self.__true_court_points[0][1] - self.__true_court_points[4][1]) / (self.__true_court_points[0][0] - self.__true_court_points[4][0])
-        l_b = self.__true_court_points[0][1] - l_a * self.__true_court_points[0][0]
-        r_a = (self.__true_court_points[1][1] - self.__true_court_points[5][1]) / (self.__true_court_points[1][0] - self.__true_court_points[5][0])
-        r_b = self.__true_court_points[1][1] - r_a * self.__true_court_points[1][0]
-        mp_y = (self.__true_court_points[2][1] + self.__true_court_points[3][1]) / 2
-
-        self.__court_info = [l_a, l_b, r_a, r_b, mp_y]
-
-        self.__multi_points = self.__partition(self.__correction()).tolist()
-
-        keypoints[0][0][0] -= 80
-        keypoints[0][0][1] -= 80
-        keypoints[0][1][0] += 80
-        keypoints[0][1][1] -= 80
-        keypoints[0][2][0] -= 80
-        keypoints[0][3][0] += 80
-        keypoints[0][4][0] -= 80
-        keypoints[0][4][1] = min(keypoints[0][4][1] + 80, frame_height - 40)
-        keypoints[0][5][0] += 80
-        keypoints[0][5][1] = min(keypoints[0][5][1] + 80, frame_height - 40)
-
-        self.__extended_court_points = keypoints[0]
-
-        self.got_info = True
-
     def __setup_court_kpRCNN(self):
         self.__court_kpRCNN = torch.load(self.args['court_kpRCNN_path'])
         self.__court_kpRCNN.to(self.device).eval()

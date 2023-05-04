@@ -4,6 +4,7 @@ from frame_processor import FrameProcessor
 import utils
 from PIL import Image
 import cv2
+import json
 
 
 class ShotAngleQueue(object):
@@ -128,6 +129,15 @@ class VideoResolver(object):
 
                         if sa_condition == 3:
                             stat_string = '1 -> 0'
+                            rally_count, drawn_img_list, player_joint_list = self.__frame_processor.start_new_rally()
+
+                            with open(f"{self.args['joints_save_path']}/joints_{rally_count}.json", 'w', encoding="utf-8") as f:
+                                json.dump({'joints': player_joint_list}, f, indent=2, ensure_ascii=False)
+
+                            out = cv2.VideoWriter(f"{self.args['video_save_path']}/video_{rally_count}.mp4",
+                                  cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
+                            self.create_video(out, drawn_img_list)
+                            out.release()
 
                     saved_count += 1
                     print(f'{saved_count} / {target_save_count}, {stat_string}')
@@ -135,3 +145,7 @@ class VideoResolver(object):
             else:
                 break
         cap.release()
+
+    def create_video(self, out, drawn_img_list):
+        for i in range(len(drawn_img_list)):
+            out.write(drawn_img_list[i])

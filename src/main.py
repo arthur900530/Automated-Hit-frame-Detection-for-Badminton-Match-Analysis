@@ -1,5 +1,4 @@
 from ai_coach import AICoach
-import torchvision, torch
 
 def main():
     args = {
@@ -8,6 +7,8 @@ def main():
         'saqueue length': 5,
         'video_directory': 'videos',
         'kpRCNN_path': 'src/models/kpRCNN.pth',
+        'video_save_path': 'outputs/videos',
+        'joints_save_path': 'outputs/joints',
     }
     
     aic = AICoach(args)
