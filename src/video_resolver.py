@@ -1,6 +1,6 @@
 from transformer import OptimusPrimeContainer
 from sacnn import SACNNContainer
-from frame_processor import FrameProcessor
+from rally_processor import RallyProcessor
 import utils
 from PIL import Image
 import cv2
@@ -66,7 +66,7 @@ class VideoResolver(object):
         self.args = args
         self.__setup_videos()
         self.__setup_sa_queue()
-        self.__setup_frame_processor()
+        self.__setup_rally_processor()
         self.__sacnn = SACNNContainer(self.args)
         # self.__opt = OptimusPrimeContainer(self.args)
 
@@ -77,8 +77,8 @@ class VideoResolver(object):
     def __setup_sa_queue(self):
         self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
     
-    def __setup_frame_processor(self):
-        self.__frame_processor = FrameProcessor(self.args)
+    def __setup_rally_processor(self):
+        self.__rally_processor = RallyProcessor(self.args)
 
     def __setup_videos(self):
         self.__video_paths = utils.get_path(self.args['video_directory'])
@@ -119,22 +119,24 @@ class VideoResolver(object):
                             zero_count += 1                            
                         if sa_condition == 1:
                             stat_string = '0 -> 1'
-                            if not self.__frame_processor.got_info:
-                                self.__frame_processor.get_court_info(self.__sa_queue.get(2)[-1], frame_height)
-                            self.__frame_processor.add_frame(frame)
+                            if not self.__rally_processor.got_info:
+                                self.__rally_processor.get_court_info(self.__sa_queue.get(2)[-1], frame_height)
+                            self.__rally_processor.add_frame(frame)
+                            rally_start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
                         if sa_condition == 2:
                             stat_string = '1 -> 1'
-                            self.__frame_processor.add_frame(frame)
+                            self.__rally_processor.add_frame(frame)
 
                         if sa_condition == 3:
                             stat_string = '1 -> 0'
-                            rally_count, drawn_img_list, player_joint_list = self.__frame_processor.start_new_rally()
+                            rally_end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                            drawn_img_list, rally_info = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
 
-                            with open(f"{self.args['joints_save_path']}/joints_{rally_count}.json", 'w', encoding="utf-8") as f:
-                                json.dump({'joints': player_joint_list}, f, indent=2, ensure_ascii=False)
+                            with open(f"{self.args['joints_save_path']}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
+                                json.dump(rally_info, f, indent=2, ensure_ascii=False)
 
-                            out = cv2.VideoWriter(f"{self.args['video_save_path']}/video_{rally_count}.mp4",
+                            out = cv2.VideoWriter(f"{self.args['video_save_path']}/video_{rally_info['rally count']}.mp4",
                                   cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
                             self.create_video(out, drawn_img_list)
                             out.release()

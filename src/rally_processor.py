@@ -8,7 +8,7 @@ from torchvision.transforms import transforms
 from torchvision.transforms import functional as F
 
 
-class FrameProcessor(object):
+class RallyProcessor(object):
     '''
     Tasks involving Keypoint RCNNs
     '''
@@ -80,14 +80,21 @@ class FrameProcessor(object):
 
         self.__drawn_img_list.append(frame)
 
-    def start_new_rally(self):
+    def start_new_rally(self, rally_start_frame, rally_end_frame):
         self.__rally_count += 1
         dil = copy.deepcopy(self.__drawn_img_list)
         pjl = copy.deepcopy(self.__player_joint_list)
         self.__drawn_img_list = []
         self.__player_joint_list = []
 
-        return self.__rally_count, dil, pjl
+        rally_info = {
+                'rally count': self.__rally_count,
+                'start frame': rally_start_frame,
+                'end frame': rally_end_frame,
+                'joints': pjl,
+            }
+
+        return dil, rally_info
 
     def __draw_key_points(self, position, filtered_outputs, image):
         edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
