@@ -6,7 +6,6 @@ from PIL import Image
 import cv2
 import json
 
-
 class ShotAngleQueue(object):
     def __init__(self, max_len):
         self.max_len = max_len
@@ -68,7 +67,7 @@ class VideoResolver(object):
         self.__setup_sa_queue()
         self.__setup_rally_processor()
         self.__sacnn = SACNNContainer(self.args)
-        # self.__opt = OptimusPrimeContainer(self.args)
+        self.__opt = OptimusPrimeContainer(self.args)
 
     def start_resolve(self):
         for path in self.__video_paths:
@@ -111,43 +110,50 @@ class VideoResolver(object):
                     2  ->  1 to 1
                     3  ->  1 to 0
                     '''
-                    stat_string = 'Added to Queue'
+                    stat_code = 'Added to Queue'
                     if frame_info:
                         sa, frame = frame_info[0], frame_info[1]
                         if sa_condition == 0:
-                            stat_string = '0 -> 0'
+                            stat_code = '0 -> 0'
                             zero_count += 1                            
                         if sa_condition == 1:
-                            stat_string = '0 -> 1'
+                            stat_code = '0 -> 1'
+                            frame_num = cap.get(cv2.CAP_PROP_POS_FRAMES)
                             if not self.__rally_processor.got_info:
                                 self.__rally_processor.get_court_info(self.__sa_queue.get(2)[-1], frame_height)
-                            self.__rally_processor.add_frame(frame)
+                            self.__rally_processor.add_frame(frame, frame_num)
                             rally_start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
                         if sa_condition == 2:
-                            stat_string = '1 -> 1'
-                            self.__rally_processor.add_frame(frame)
+                            stat_code = '1 -> 1'
+                            frame_num = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                            self.__rally_processor.add_frame(frame, frame_num)
 
                         if sa_condition == 3:
-                            stat_string = '1 -> 0'
+                            stat_code = '1 -> 0'
                             rally_end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-                            drawn_img_list, rally_info = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
 
+                            drawn_img_list, rally_info = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
+                            joint_sequence = rally_info['joints']
+                            shuttle_flying_seq = self.__opt.predict(joint_sequence)
+                            print(shuttle_flying_seq)
+                            
                             with open(f"{self.args['joints_save_path']}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
                                 json.dump(rally_info, f, indent=2, ensure_ascii=False)
 
                             out = cv2.VideoWriter(f"{self.args['video_save_path']}/video_{rally_info['rally count']}.mp4",
                                   cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
-                            self.create_video(out, drawn_img_list)
+                            
+                            self.__create_video(out, drawn_img_list)
                             out.release()
 
                     saved_count += 1
-                    print(f'{saved_count} / {target_save_count}, {stat_string}')
+                    print(f'{saved_count} / {target_save_count}, {stat_code}')
                 frame_count += 1
             else:
                 break
         cap.release()
 
-    def create_video(self, out, drawn_img_list):
+    def __create_video(self, out, drawn_img_list):
         for i in range(len(drawn_img_list)):
             out.write(drawn_img_list[i])

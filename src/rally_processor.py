@@ -19,6 +19,7 @@ class RallyProcessor(object):
         self.__rally_count = 0
         self.__drawn_img_list = []
         self.__player_joint_list = []
+        self.__empty_frame_list = []
         self.__setup_court_kpRCNN()
         self.__setup_kpRCNN()
 
@@ -65,7 +66,7 @@ class RallyProcessor(object):
 
         self.got_info = True
 
-    def add_frame(self, frame):
+    def add_frame(self, frame, frame_num):
         outputs = self.__human_detection(frame)
         result = self.__player_detection(outputs)
         if result:
@@ -76,7 +77,7 @@ class RallyProcessor(object):
             self.__player_joint_list.append(filtered_outputs)
             frame = self.__draw_key_points(position, filtered_outputs, frame)
         else:
-            self.__player_joint_list.append(-1)  # indicates that the sa is 1 but the players aren't in court
+            self.__empty_frame_list.append(frame_num)  # indicates that the sa is 1 but the players aren't in court
 
         self.__drawn_img_list.append(frame)
 
@@ -84,8 +85,10 @@ class RallyProcessor(object):
         self.__rally_count += 1
         dil = copy.deepcopy(self.__drawn_img_list)
         pjl = copy.deepcopy(self.__player_joint_list)
+        print(rally_start_frame, self.__empty_frame_list, rally_end_frame)
         self.__drawn_img_list = []
         self.__player_joint_list = []
+        self.__empty_frame_list = []
 
         rally_info = {
                 'rally count': self.__rally_count,
@@ -93,7 +96,7 @@ class RallyProcessor(object):
                 'end frame': rally_end_frame,
                 'joints': pjl,
             }
-
+        
         return dil, rally_info
 
     def __draw_key_points(self, position, filtered_outputs, image):
