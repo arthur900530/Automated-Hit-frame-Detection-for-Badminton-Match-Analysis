@@ -9,6 +9,7 @@ def main():
         'kpRCNN_path': 'src/models/kpRCNN.pth',
         'video_save_path': 'outputs/videos',
         'joints_save_path': 'outputs/joints',
+        'rally_save_path': 'outputs/rallies',
         'opt_path': 'src/models/OPT_16_head_dp.pt',
         'scaler_path': 'src/models/scaler_new.pickle',
     }
