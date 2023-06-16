@@ -7,3 +7,8 @@ def get_path(base):
             paths.append(base + '/' + entry.name)
             pass
     return paths
+
+def check_dir(path):
+    isExit = os.path.exists(path)
+    if not isExit:
+        os.mkdir(path)

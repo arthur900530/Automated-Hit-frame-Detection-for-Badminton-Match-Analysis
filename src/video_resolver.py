@@ -71,7 +71,19 @@ class VideoResolver(object):
 
     def start_resolve(self):
         for path in self.__video_paths:
+            self.video_name = path.split('/')[-1].split('.mp4')[0]
+            self.__build_saving_directories()
             self.__resolve(path)
+
+    def __build_saving_directories(self):
+        output_dirs = [f"{self.args['video_save_path']}/{self.video_name}",
+                       f"{self.args['joint_save_path']}/{self.video_name}",
+                       f"{self.args['rally_save_path']}/{self.video_name}"]
+        for dir in output_dirs:
+            utils.check_dir(dir)
+        self.video_save_path = output_dirs[0]
+        self.joint_save_path = output_dirs[1]
+        self.rally_save_path = output_dirs[2]      
 
     def __setup_sa_queue(self):
         self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
@@ -143,10 +155,10 @@ class VideoResolver(object):
                             # shuttle_flying_seq = self.__opt.predict(joint_sequence)
                             # print(shuttle_flying_seq)
                             
-                            with open(f"{self.args['joints_save_path']}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
+                            with open(f"{self.joint_save_path}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
                                 json.dump(rally_info, f, indent=2, ensure_ascii=False)
 
-                            out = cv2.VideoWriter(f"{self.args['video_save_path']}/video_{rally_info['rally count']}.mp4",
+                            out = cv2.VideoWriter(f"{self.video_save_path}/video_{rally_info['rally count']}.mp4",
                                   cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
                             
                             self.__create_video(out, drawn_img_list)
@@ -158,7 +170,7 @@ class VideoResolver(object):
                 break
         cap.release()
         rallies_info = {'rally': start_end_frame_list}
-        with open(f"{self.args['rally_save_path']}/{vid_name}.json", 'w', encoding="utf-8") as f:
+        with open(f"{self.rally_save_path}/{vid_name}.json", 'w', encoding="utf-8") as f:
             json.dump(rallies_info, f, indent=2, ensure_ascii=False)
 
     def __create_video(self, out, drawn_img_list):
