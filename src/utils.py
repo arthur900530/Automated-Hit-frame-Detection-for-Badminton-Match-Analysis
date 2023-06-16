@@ -12,3 +12,4 @@ def check_dir(path):
     isExit = os.path.exists(path)
     if not isExit:
         os.mkdir(path)
+    return isExit

@@ -72,18 +72,22 @@ class VideoResolver(object):
     def start_resolve(self):
         for path in self.__video_paths:
             self.video_name = path.split('/')[-1].split('.mp4')[0]
-            self.__build_saving_directories()
-            self.__resolve(path)
+            resolved = self.__build_saving_directories()
+            if not resolved:
+                self.__resolve(path)
+            else:
+                print(f'{self.video_name} was resolved.')
 
     def __build_saving_directories(self):
         output_dirs = [f"{self.args['video_save_path']}/{self.video_name}",
                        f"{self.args['joint_save_path']}/{self.video_name}",
                        f"{self.args['rally_save_path']}/{self.video_name}"]
         for dir in output_dirs:
-            utils.check_dir(dir)
+            resolved = utils.check_dir(dir)
         self.video_save_path = output_dirs[0]
         self.joint_save_path = output_dirs[1]
-        self.rally_save_path = output_dirs[2]      
+        self.rally_save_path = output_dirs[2]
+        return resolved
 
     def __setup_sa_queue(self):
         self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
