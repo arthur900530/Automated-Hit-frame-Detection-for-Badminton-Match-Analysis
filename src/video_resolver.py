@@ -81,7 +81,7 @@ class VideoResolver(object):
     def __build_saving_directories(self):
         output_dirs = [f"{self.args['video_save_path']}/{self.video_name}",
                        f"{self.args['joint_save_path']}/{self.video_name}",
-                       f"{self.args['rally_save_path']}/{self.video_name}"]
+                       f"{self.args['rally_save_path']}/"]
         for dir in output_dirs:
             resolved = utils.check_dir(dir)
         self.video_save_path = output_dirs[0]
