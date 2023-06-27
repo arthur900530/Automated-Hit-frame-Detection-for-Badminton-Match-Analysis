@@ -82,8 +82,11 @@ class VideoResolver(object):
         output_dirs = [f"{self.args['video_save_path']}/{self.video_name}",
                        f"{self.args['joint_save_path']}/{self.video_name}",
                        f"{self.args['rally_save_path']}/"]
+        resolved = True
         for dir in output_dirs:
-            resolved = utils.check_dir(dir)
+            resolved_dir = utils.check_dir(dir)
+            if not resolved_dir:
+                resolved = False
         self.video_save_path = output_dirs[0]
         self.joint_save_path = output_dirs[1]
         self.rally_save_path = output_dirs[2]
