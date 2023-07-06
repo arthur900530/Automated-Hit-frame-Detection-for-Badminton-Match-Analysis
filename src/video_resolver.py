@@ -1,5 +1,5 @@
-from transformer import OptimusPrimeContainer
-from sacnn import SACNNContainer
+from models.transformer import OptimusPrimeContainer
+from models.sacnn import SACNNContainer
 from rally_processor import RallyProcessor
 import utils
 from PIL import Image
@@ -63,11 +63,12 @@ class ShotAngleQueue(object):
 class VideoResolver(object):
     def __init__(self, args):
         self.args = args
+        self.model_args = self.args['model']
         self.__setup_videos()
         self.__setup_sa_queue()
         self.__setup_rally_processor()
-        self.__sacnn = SACNNContainer(self.args)
-        # self.__opt = OptimusPrimeContainer(self.args)
+        self.__sacnn = SACNNContainer(self.model_args)
+        self.__opt = OptimusPrimeContainer(self.model_args)
 
     def start_resolve(self):
         for path in self.__video_paths:
@@ -96,7 +97,7 @@ class VideoResolver(object):
         self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
     
     def __setup_rally_processor(self):
-        self.__rally_processor = RallyProcessor(self.args)
+        self.__rally_processor = RallyProcessor(self.model_args)
 
     def __setup_videos(self):
         self.__video_paths = utils.get_path(self.args['video_directory'])

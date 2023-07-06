@@ -3,8 +3,6 @@ from video_resolver import VideoResolver
 
 class AICoach(object):
     def __init__(self, args):
-        """
-        """
         self.args = args
         self.__setup_resolver()
     
@@ -14,3 +12,4 @@ class AICoach(object):
 
     def __setup_resolver(self):
         self.__vid_resolver = VideoResolver(self.args)
+    

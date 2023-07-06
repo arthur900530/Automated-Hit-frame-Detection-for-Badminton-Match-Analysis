@@ -6,15 +6,16 @@
 # User-specific files
 opt_data/
 opt_val_data/
-# badminton data yc/
-src/.ipynb_checkpoints/
-src/__pycache/
-src/models/
-src/eval.ipynb
 src/OPT_Inferencing.ipynb
 src/new_seq_labling.ipynb
-src/OPT_inferencing.ipynb
 src/Training OPT.ipynb
+################################################
+src/.ipynb_checkpoints/
+src/__pycache__
+src/eval.ipynb
+src/models/weights/court_kpRCNN.pth
+src/models/weights/kpRCNN.pth
+src/models/weights/OPT*
 ################################################
 *.rsuser
 *.suo

@@ -1,18 +1,10 @@
 from ai_coach import AICoach
+import yaml
+
 
 def main():
-    args = {
-        'sacnn_path': 'src/models/sacnn.pt',
-        'court_kpRCNN_path': 'src/models/court_kpRCNN.pth',
-        'saqueue length': 5,
-        'video_directory': 'videos',
-        'kpRCNN_path': 'src/models/kpRCNN.pth',
-        'video_save_path': 'outputs/videos',
-        'joint_save_path': 'outputs/joints',
-        'rally_save_path': 'outputs/rallies',
-        'opt_path': 'src/models/OPT_16_head_dp.pt',
-        'scaler_path': 'src/models/scaler_new.pickle',
-    }
+    with open("../configs/ai_coach.yaml", "r") as stream:
+        args = yaml.safe_load(stream)
     
     aic = AICoach(args)
     aic.start_resolver()

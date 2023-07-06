@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
-from layers import PositionalEncoding, CoordinateEmbedding
+from models.layers import PositionalEncoding, CoordinateEmbedding
 import numpy as np
 import math
 import pickle

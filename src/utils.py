@@ -5,7 +5,6 @@ def get_path(base):
     with os.scandir(base) as entries:
         for entry in entries:
             paths.append(base + '/' + entry.name)
-            pass
     return paths
 
 def check_dir(path):
