@@ -1,4 +1,3 @@
-from models.transformer import OptimusPrimeContainer
 from models.sacnn import SACNNContainer
 from rally_processor import RallyProcessor
 import utils
@@ -68,7 +67,6 @@ class VideoResolver(object):
         self.__setup_sa_queue()
         self.__setup_rally_processor()
         self.__sacnn = SACNNContainer(self.model_args)
-        self.__opt = OptimusPrimeContainer(self.model_args)
 
     def start_resolve(self):
         for path in self.__video_paths:
@@ -102,6 +100,10 @@ class VideoResolver(object):
     def __setup_videos(self):
         self.__video_paths = utils.get_path(self.args['video_directory'])
 
+    def __create_video(self, out, drawn_img_list):
+        for i in range(len(drawn_img_list)):
+            out.write(drawn_img_list[i])
+
     def __resolve(self, vid_path):
         vid_name = vid_path.split('/')[-1].split('.')[0]
         cap = cv2.VideoCapture(vid_path)
@@ -116,8 +118,6 @@ class VideoResolver(object):
         target_save_count = int(total_frame_count / frame_rate)
 
         zero_count = 0
-
-        start_end_frame_list = []
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -158,10 +158,6 @@ class VideoResolver(object):
                             rally_end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
                             drawn_img_list, rally_info = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
-                            # joint_sequence = rally_info['joints']
-                            start_end_frame_list.append((rally_info['start frame'], rally_info['end frame'], rally_info['rally count']))
-                            # shuttle_flying_seq = self.__opt.predict(joint_sequence)
-                            # print(shuttle_flying_seq)
                             
                             with open(f"{self.joint_save_path}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
                                 json.dump(rally_info, f, indent=2, ensure_ascii=False)
@@ -177,10 +173,8 @@ class VideoResolver(object):
             else:
                 break
         cap.release()
-        rallies_info = {'rally': start_end_frame_list}
+
+        rallies_info = {'rally': self.__rally_processor.start_end_frame_list}
+
         with open(f"{self.rally_save_path}/{vid_name}.json", 'w', encoding="utf-8") as f:
             json.dump(rallies_info, f, indent=2, ensure_ascii=False)
-
-    def __create_video(self, out, drawn_img_list):
-        for i in range(len(drawn_img_list)):
-            out.write(drawn_img_list[i])

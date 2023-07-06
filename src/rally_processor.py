@@ -6,6 +6,8 @@ import cv2
 from PIL import Image
 from torchvision.transforms import transforms
 from torchvision.transforms import functional as F
+from models.transformer import OptimusPrimeContainer
+
 
 
 class RallyProcessor(object):
@@ -16,12 +18,26 @@ class RallyProcessor(object):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.args = args
         self.got_info = False
-        self.__rally_count = 0
-        self.__drawn_img_list = []
-        self.__player_joint_list = []
-        self.__empty_frame_list = []
-        self.__setup_court_kpRCNN()
-        self.__setup_kpRCNN()
+        self.rally_count = 0
+        self.__setup_sotrage_lists()
+        self.__setup_RCNN()
+        self.__setup_opt()
+
+    def __setup_RCNN(self):
+        self.__court_kpRCNN = torch.load(self.args['court_kpRCNN_path'])
+        self.__court_kpRCNN.to(self.device).eval()
+        self.__kpRCNN = torch.load(self.args['kpRCNN_path'])
+        self.__kpRCNN.to(self.device).eval()
+    
+    def __setup_opt(self):
+        self.__opt = OptimusPrimeContainer(self.args)
+
+    def __setup_sotrage_lists(self):
+        self.drawn_img_list = []
+        self.player_joint_list = []
+        self.frame_num_list = []
+        self.empty_frame_list = []
+        self.start_end_frame_list = []
 
     def get_court_info(self, img, frame_height):
         img = F.to_tensor(img)
@@ -74,30 +90,36 @@ class RallyProcessor(object):
             for points in filtered_outputs:
                 for i, joints in enumerate(points):
                     points[i] = joints[0:2]
-            self.__player_joint_list.append(filtered_outputs)
+            self.player_joint_list.append(filtered_outputs)
+            self.frame_num_list.append(frame_num)
             frame = self.__draw_key_points(position, filtered_outputs, frame)
         else:
-            self.__empty_frame_list.append(frame_num)  # indicates that the sa is 1 but the players aren't in court
+            self.empty_frame_list.append(frame_num)  # indicates that the sa is 1 but the players aren't in court
 
-        self.__drawn_img_list.append(frame)
+        self.drawn_img_list.append(frame)
 
     def start_new_rally(self, rally_start_frame, rally_end_frame):
-        self.__rally_count += 1
-        dil = copy.deepcopy(self.__drawn_img_list)
-        pjl = copy.deepcopy(self.__player_joint_list)
-        print(rally_start_frame, self.__empty_frame_list, rally_end_frame)
-        self.__drawn_img_list = []
-        self.__player_joint_list = []
-        self.__empty_frame_list = []
+        self.rally_count += 1
+        drawn_img_list = copy.deepcopy(self.drawn_img_list)
+        player_joint_list = copy.deepcopy(self.player_joint_list)
+        frame_num_list = copy.deepcopy(self.frame_num_list)
+        self.drawn_img_list = []
+        self.player_joint_list = []
+        self.empty_frame_list = []
+        self.start_end_frame_list.append((rally_start_frame, rally_end_frame, self.rally_count))
 
-        rally_info = {
-                'rally count': self.__rally_count,
+        self.rally_info = {
+                'rally count': self.rally_count,
                 'start frame': rally_start_frame,
                 'end frame': rally_end_frame,
-                'joints': pjl,
-            }
-        
-        return dil, rally_info
+                'joints': player_joint_list,
+                'frame nums': frame_num_list
+        }
+        return drawn_img_list, self.rally_info
+
+    def predict_flying_direction(self):
+        joint_sequence = self.rally_info['joints']
+        shuttle_flying_seq = self.__opt.predict(joint_sequence)
 
     def __draw_key_points(self, position, filtered_outputs, image):
         edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
@@ -147,14 +169,6 @@ class RallyProcessor(object):
                                 color, 2, lineType=cv2.LINE_AA)
         return image
   
-    def __setup_court_kpRCNN(self):
-        self.__court_kpRCNN = torch.load(self.args['court_kpRCNN_path'])
-        self.__court_kpRCNN.to(self.device).eval()
-    
-    def __setup_kpRCNN(self):
-        self.__kpRCNN = torch.load(self.args['kpRCNN_path'])
-        self.__kpRCNN.to(self.device).eval()
-
     def __human_detection(self, frame):
         pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
         t_image = transforms.Compose([transforms.ToTensor()])(pil_image).unsqueeze(0).to(self.device)
