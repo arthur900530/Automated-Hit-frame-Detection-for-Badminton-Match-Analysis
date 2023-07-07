@@ -92,7 +92,7 @@ class VideoResolver(object):
         return resolved
 
     def __setup_sa_queue(self):
-        self.__sa_queue = ShotAngleQueue(self.args['saqueue length'])
+        self.__sa_queue = ShotAngleQueue(self.args['sa_queue length'])
     
     def __setup_rally_processor(self):
         self.__rally_processor = RallyProcessor(self.model_args)

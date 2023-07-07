@@ -4,7 +4,7 @@ model:
   kpRCNN_path: './models/weights/kpRCNN.pth'
   opt_path: './models/weights/OPT_16_head_dp.pt'
   scaler_path: './models/weights/scaler.pickle'
-saqueue length: 5
+sa_queue length: 5
 video_directory: '../videos'
 video_save_path: '../outputs/videos'
 joint_save_path: '../outputs/joints'
