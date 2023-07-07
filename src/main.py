@@ -1,9 +1,12 @@
 from ai_coach import AICoach
+from param_parser import parameter_parser
 import yaml
 
 
 def main():
-    with open("../configs/ai_coach.yaml", "r") as stream:
+    args = parameter_parser()
+
+    with open(args.yaml_path, "r") as stream:
         args = yaml.safe_load(stream)
     
     aic = AICoach(args)
