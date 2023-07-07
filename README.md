@@ -11,6 +11,7 @@ torchvision == 0.15.2
 yaml
 ```
 ## YAML Parameters
+```
 - model:
   - sacnn_path: Path to SA-CNN's weight                               Default is './models/weights/sacnn.pt'.
   - court_kpRCNN_path: Path to Court Keypoint-RCNN's weight           Default is './models/weights/court_kpRCNN.pth'.
@@ -22,6 +23,7 @@ yaml
 - video_save_path: Directory to store resolved videos                 Default is '../outputs/videos'.
 - joint_save_path: Directory to store player joints and frame info    Default is '../outputs/joints'.
 - rally_save_path: Directory to store rally-wise info                 Default is '../outputs/rallies'.
+```
 ## Run the Code
 ```
 python main.py
