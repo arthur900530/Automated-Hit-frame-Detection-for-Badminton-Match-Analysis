@@ -167,6 +167,7 @@ class VideoResolver(object):
                             
                             self.__create_video(out, drawn_img_list)
                             out.release()
+
                     saved_count += 1
                     print(f'{saved_count} / {target_save_count}, {stat_code}')
                 frame_count += 1

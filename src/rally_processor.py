@@ -107,19 +107,53 @@ class RallyProcessor(object):
         self.player_joint_list = []
         self.empty_frame_list = []
         self.start_end_frame_list.append((rally_start_frame, rally_end_frame, self.rally_count))
-
+        shuttle_flying_seq, hit_frame_indices = self.__predict_flying_direction(player_joint_list)
+    
         self.rally_info = {
                 'rally count': self.rally_count,
                 'start frame': rally_start_frame,
                 'end frame': rally_end_frame,
-                'joints': player_joint_list,
-                'frame nums': frame_num_list
+                'frame nums': frame_num_list,
+                'shuttle directions': shuttle_flying_seq,
+                'hit frames': hit_frame_indices,
+                'joints': player_joint_list
         }
+
         return drawn_img_list, self.rally_info
 
-    def predict_flying_direction(self):
-        joint_sequence = self.rally_info['joints']
-        shuttle_flying_seq = self.__opt.predict(joint_sequence)
+    def __predict_flying_direction(self, joint_sequence):
+        shuttle_flying_seq = list(self.__opt.predict(joint_sequence).cpu().numpy().astype(float))
+        hit_frame_indices = list(self.__check_hit_frame(shuttle_flying_seq))
+        return shuttle_flying_seq, hit_frame_indices
+    
+    def __check_hit_frame(self, direction_list):
+        '''
+        0 -> 1
+        0 -> 2
+        1 -> 2
+        2 -> 1
+        '''
+        last_direction = 0
+        hit_frame_indices = []
+        for i in range(len(direction_list)):
+            direction = direction_list[i]
+            if direction != last_direction:
+                if last_direction == 0:
+                    hit_frame_indices.append(i)
+                elif last_direction == 1:
+                    if direction == 2:
+                        hit_frame_indices.append(i)
+                    else:
+                        continue
+                elif last_direction == 2:
+                    if direction == 1:
+                        hit_frame_indices.append(i)
+                    else:
+                        continue
+            last_direction = direction
+        hit_frame_indices = np.array(hit_frame_indices).astype(float)
+
+        return hit_frame_indices
 
     def __draw_key_points(self, position, filtered_outputs, image):
         edges = [(0, 1), (0, 2), (2, 4), (1, 3), (6, 8), (8, 10), (11, 12), (5, 7),
