@@ -17,6 +17,20 @@ def check_dir(path):
         os.mkdir(path)
     return isExit
 
+def search_target(target_paths, video_name):
+    for t_path in target_paths:
+        t_name = t_path.split('/')[-1]
+        if video_name in t_name:
+            return t_path
+    return False
+
+def cal_confusion_matrix(correct, extra, missed):
+    accuracy = round(correct / (correct + missed), 4)
+    precision = round(correct / (correct + extra), 4)
+    recall = round(correct / (correct + missed), 4)
+    f1 = round(2 / ((1 / recall) + (1 / precision)), 4)
+    return accuracy, precision, recall, f1
+
 def trimming_module_eval(target_paths, output_paths, show=True):
     def show_result(results, accuracy, precision, recall, f1):
         print('='*30)
@@ -36,19 +50,6 @@ def trimming_module_eval(target_paths, output_paths, show=True):
         print('Recall: ', recall)
         print('F1-score: ', f1)
         print('='*30)
-    def search_target(target_paths, output_path):
-        o_name = output_path.split('/')[-1].split('.json')[0]
-        for t_path in target_paths:
-            t_name = t_path.split('/')[-1]
-            if o_name in t_name:
-                return t_path
-        return False
-    def cal_confusion_matrix(correctly_predicted, extra_trimmed, missed):
-        accuracy = round(correctly_predicted / (correctly_predicted + missed), 4)
-        precision = round(correctly_predicted / (correctly_predicted + extra_trimmed), 4)
-        recall = round(correctly_predicted / (correctly_predicted + missed), 4)
-        f1 = round(2 / ((1 / recall) + (1 / precision)), 4)
-        return accuracy, precision, recall, f1
     
     gotcha = 0
     first_half = 0
@@ -57,9 +58,14 @@ def trimming_module_eval(target_paths, output_paths, show=True):
     missed = 0
     total_true_rallies = 0
     total_trimmed_rallies = 0
+    correctly_trimmed_ranges = {}
+
     for i in range(len(output_paths)):
         true_rallies = []
-        target_path = search_target(target_paths, output_paths[i])
+        correctly_trimmed_list = []
+        output_name = output_paths[i].split('/')[-1].split('.json')[0]
+    
+        target_path = search_target(target_paths, output_name)
         if target_path:
             with open(f'{target_path}/RallySeg.csv', newline='') as csvfile:
                 rows = csv.reader(csvfile)
@@ -86,22 +92,27 @@ def trimming_module_eval(target_paths, output_paths, show=True):
                 true_end = int(true_rally[1])
 
                 if trimmed_start - 3 < true_start < true_end < trimmed_end + 3:
+                    correctly_trimmed_list.append((true_start, true_end))
                     gotcha += 1
                     _ = true_rallies.pop(i)
                     copied_rallies.remove(trimmed_rally)
                     break
 
                 if true_start < trimmed_start < true_end < trimmed_end:
+                    correctly_trimmed_list.append((true_start, true_end))
                     second_half += 1
                     _ = true_rallies.pop(i)
                     copied_rallies.remove(trimmed_rally)
                     break
 
                 if trimmed_start < true_start < trimmed_end < true_end:
+                    correctly_trimmed_list.append((true_start, true_end))
                     first_half += 1
                     _ = true_rallies.pop(i)
                     copied_rallies.remove(trimmed_rally)
                     break
+            correctly_trimmed_ranges[output_name] = correctly_trimmed_list
+            
         extra_trimmed += len(copied_rallies)
         missed += len(true_rallies)
     
@@ -111,7 +122,7 @@ def trimming_module_eval(target_paths, output_paths, show=True):
     if show:
         show_result(results, accuracy, precision, recall, f1)
     
-    return True
+    return True, correctly_trimmed_ranges
 
 
 
