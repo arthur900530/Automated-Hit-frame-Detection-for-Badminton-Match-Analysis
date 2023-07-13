@@ -7,6 +7,7 @@ import numpy as np
 import math
 import pickle
 
+
 class OptimusPrime(nn.Module):
     def __init__(self, num_tokens, dim_model, num_heads, num_encoder_layers, dim_feedforward, dropout_p=0):
         super().__init__()
@@ -14,30 +15,25 @@ class OptimusPrime(nn.Module):
         self.dim_model = dim_model
 
         # LAYERS
-        self.positional_encoder = PositionalEncoding(dim_model=dim_model, dropout_p=dropout_p, max_len=600)
-
         self.xy_embedding = CoordinateEmbedding(in_channels=34, emb_size=dim_model)
 
         encoder_layers = TransformerEncoderLayer(dim_model, num_heads, dim_feedforward, dropout_p)
         self.transformer_encoder = TransformerEncoder(encoder_layers, num_encoder_layers)
 
         self.decoder1 = nn.Linear(dim_model, dim_model)
-        self.decoder2 = nn.Linear(dim_model, int(dim_model/2))
-        self.decoder3 = nn.Linear(int(dim_model/2), num_tokens)
+        self.decoder2 = nn.Linear(dim_model, num_tokens)
 
     def forward(self, src, src_pad_mask=None):
         src = self.xy_embedding(src)
-        # src = self.positional_encoder(src) * math.sqrt(self.dim_model)
         src = src.permute(1, 0, 2)
 
         # Transformer blocks - Out size = (sequence length, batch_size, num_tokens)
         output = self.transformer_encoder(src, src_key_padding_mask=src_pad_mask)
         output = F.relu(self.decoder1(output))
         output = self.decoder2(output)
-        output = self.decoder3(output)
         return output
-    
-    def create_src_pad_mask(self, matrix: torch.tensor, PAD_array=np.zeros((1, 2, 17, 2))):
+
+    def create_src_pad_mask(self, matrix: torch.tensor, PAD_array=np.zeros((1, 2, 17, 2))) -> torch.tensor:
         # If matrix = [1,2,3,0,0,0] where pad_token=0, the result mask is
         # [False, False, False, True, True, True]
 
@@ -67,8 +63,7 @@ class OptimusPrimeContainer(object):
     
     def __setup_model(self):
         self.model = OptimusPrime(
-            num_tokens=4, dim_model=512, num_heads=16, num_encoder_layers=8, dim_feedforward=1024,
-            dropout_p=0
+            num_tokens=4, dim_model=2048, num_heads=8, num_encoder_layers=8, dim_feedforward=2048, dropout_p=0
         ).to(self.device)
         self.model.load_state_dict(torch.load(self.args['opt_path']))
         self.model.eval()

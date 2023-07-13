@@ -99,14 +99,14 @@ def trimming_module_eval(target_paths, output_paths, show=True):
                     break
 
                 if true_start < trimmed_start < true_end < trimmed_end:
-                    correctly_trimmed_list.append((true_start, true_end))
+                    correctly_trimmed_list.append((trimmed_start, true_end))
                     second_half += 1
                     _ = true_rallies.pop(i)
                     copied_rallies.remove(trimmed_rally)
                     break
 
                 if trimmed_start < true_start < trimmed_end < true_end:
-                    correctly_trimmed_list.append((true_start, true_end))
+                    correctly_trimmed_list.append((true_start, trimmed_end))
                     first_half += 1
                     _ = true_rallies.pop(i)
                     copied_rallies.remove(trimmed_rally)

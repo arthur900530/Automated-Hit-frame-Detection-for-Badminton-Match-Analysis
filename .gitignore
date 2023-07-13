@@ -9,6 +9,9 @@ opt_val_data/
 src/OPT_Inferencing.ipynb
 src/new_seq_labling.ipynb
 src/Training OPT.ipynb
+outputs/joints
+outputs/videos
+outputs/rallies
 ################################################
 src/.ipynb_checkpoints/
 src/__pycache__
