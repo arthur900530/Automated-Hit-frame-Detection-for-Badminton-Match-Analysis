@@ -133,7 +133,7 @@ class RallyProcessor(object):
         for direction in shuttle_flying_seq:
             if direction == 0:
                 zero_count += 1
-        return True if zero_count/len(shuttle_flying_seq) > 0.5 else False
+        return False if zero_count/len(shuttle_flying_seq) > 0.6 else True
 
     def __predict_flying_direction(self, joint_sequence):
         if self.__check_valid_rally(joint_sequence):
