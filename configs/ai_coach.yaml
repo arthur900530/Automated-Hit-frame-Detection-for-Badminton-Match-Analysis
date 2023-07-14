@@ -2,7 +2,7 @@ model:
   sacnn_path: './models/weights/sacnn.pt'
   court_kpRCNN_path: './models/weights/court_kpRCNN.pth'
   kpRCNN_path: './models/weights/kpRCNN.pth'
-  opt_path: './models/weights/opt.pt'
+  opt_path: './models/weights/opt_0.91284.pt'
   scaler_path: './models/weights/scaler.pickle'
 sa_queue length: 5
 video_directory: '../videos'

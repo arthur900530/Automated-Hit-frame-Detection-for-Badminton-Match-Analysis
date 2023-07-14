@@ -106,25 +106,47 @@ class RallyProcessor(object):
         self.drawn_img_list = []
         self.player_joint_list = []
         self.empty_frame_list = []
-        self.start_end_frame_list.append((rally_start_frame, rally_end_frame, self.rally_count))
-        shuttle_flying_seq, hit_frame_indices = self.__predict_flying_direction(player_joint_list)
-    
-        self.rally_info = {
-                'rally count': self.rally_count,
-                'start frame': rally_start_frame,
-                'end frame': rally_end_frame,
-                'frame nums': frame_num_list,
-                'shuttle directions': shuttle_flying_seq,
-                'hit frames': hit_frame_indices,
-                'joints': player_joint_list
-        }
+        
+        result = self.__predict_flying_direction(player_joint_list)
 
-        return drawn_img_list, self.rally_info
+        if result:
+            self.start_end_frame_list.append((rally_start_frame, rally_end_frame, self.rally_count))
+            shuttle_flying_seq, hit_frame_indices = result
+            self.rally_info = {
+                    'rally count': self.rally_count,
+                    'start frame': rally_start_frame,
+                    'end frame': rally_end_frame,
+                    'frame nums': frame_num_list,
+                    'shuttle directions': shuttle_flying_seq,
+                    'hit frames': hit_frame_indices,
+                    'joints': player_joint_list
+            }
+            return (drawn_img_list, self.rally_info)
+        else:
+            return False
+    
+    def __check_valid_rally(self, joint_sequence):
+        return False if len(joint_sequence) < 10 else True
+    
+    def __check_valid_sequence(self, shuttle_flying_seq):
+        zero_count = 0
+        for direction in shuttle_flying_seq:
+            if direction == 0:
+                zero_count += 1
+        return True if zero_count/len(shuttle_flying_seq) > 0.5 else False
 
     def __predict_flying_direction(self, joint_sequence):
-        shuttle_flying_seq = list(self.__opt.predict(joint_sequence).cpu().numpy().astype(float))
-        hit_frame_indices = list(self.__check_hit_frame(shuttle_flying_seq))
-        return shuttle_flying_seq, hit_frame_indices
+        if self.__check_valid_rally(joint_sequence):
+            shuttle_flying_seq = list(self.__opt.predict(joint_sequence).cpu().numpy().astype(float))
+        else:
+            return False
+        
+        if self.__check_valid_sequence(shuttle_flying_seq):
+            hit_frame_indices = list(self.__check_hit_frame(shuttle_flying_seq))
+        else:
+            return False
+        
+        return (shuttle_flying_seq, hit_frame_indices)
     
     def __check_hit_frame(self, direction_list):
         '''

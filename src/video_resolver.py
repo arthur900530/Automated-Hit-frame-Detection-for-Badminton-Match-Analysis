@@ -157,16 +157,19 @@ class VideoResolver(object):
                             stat_code = '1 -> 0'
                             rally_end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
-                            drawn_img_list, rally_info = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
+                            rally_results = self.__rally_processor.start_new_rally(rally_start_frame, rally_end_frame)
                             
-                            with open(f"{self.joint_save_path}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
-                                json.dump(rally_info, f, indent=2, ensure_ascii=False)
+                            if rally_results:
+                                drawn_img_list, rally_info = rally_results
 
-                            out = cv2.VideoWriter(f"{self.video_save_path}/video_{rally_info['rally count']}.mp4",
-                                  cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
-                            
-                            self.__create_video(out, drawn_img_list)
-                            out.release()
+                                with open(f"{self.joint_save_path}/rally_{rally_info['rally count']}.json", 'w', encoding="utf-8") as f:
+                                    json.dump(rally_info, f, indent=2, ensure_ascii=False)
+
+                                out = cv2.VideoWriter(f"{self.video_save_path}/video_{rally_info['rally count']}.mp4",
+                                    cv2.VideoWriter_fourcc(*'mp4v'), int(fps / frame_rate), (frame_width, frame_height))
+                                
+                                self.__create_video(out, drawn_img_list)
+                                out.release()
 
                     saved_count += 1
                     print(f'{saved_count} / {target_save_count}, {stat_code}')
