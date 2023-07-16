@@ -64,7 +64,6 @@ class VideoResolver(object):
         self.args = args
         self.model_args = self.args['model']
         self.__setup_videos()
-        self.__setup_sa_queue()
         self.__setup_rally_processor()
         self.__sacnn = SACNNContainer(self.model_args)
 
@@ -73,12 +72,20 @@ class VideoResolver(object):
             self.video_name = path.split('/')[-1].split('.mp4')[0]
             resolved = self.__build_saving_directories()
             if not resolved:
+                self.__setup()
                 self.__resolve(path)
             else:
                 print(f'{self.video_name} was resolved.')
 
+    def __setup(self):
+        self.__setup_sa_queue()
+        self.__rally_processor.reset()
+
     def __build_saving_directories(self):
-        output_dirs = [f"{self.args['video_save_path']}/{self.video_name}",
+        output_dirs = [self.args['video_save_path'],
+                       self.args['joint_save_path'],
+                       self.args['rally_save_path'],
+                       f"{self.args['video_save_path']}/{self.video_name}",
                        f"{self.args['joint_save_path']}/{self.video_name}",
                        f"{self.args['rally_save_path']}/"]
         resolved = True
@@ -86,9 +93,9 @@ class VideoResolver(object):
             resolved_dir = utils.check_dir(dir)
             if not resolved_dir:
                 resolved = False
-        self.video_save_path = output_dirs[0]
-        self.joint_save_path = output_dirs[1]
-        self.rally_save_path = output_dirs[2]
+        self.video_save_path = output_dirs[3]
+        self.joint_save_path = output_dirs[4]
+        self.rally_save_path = output_dirs[5]
         return resolved
 
     def __setup_sa_queue(self):

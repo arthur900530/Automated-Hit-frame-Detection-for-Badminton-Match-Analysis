@@ -22,6 +22,12 @@ class RallyProcessor(object):
         self.__setup_sotrage_lists()
         self.__setup_RCNN()
         self.__setup_opt()
+    
+    def reset(self):
+        self.got_info = False
+        self.rally_count = 0
+        self.__setup_sotrage_lists()
+        self.rally_info = None
 
     def __setup_RCNN(self):
         self.__court_kpRCNN = torch.load(self.args['court_kpRCNN_path'])
@@ -36,7 +42,6 @@ class RallyProcessor(object):
         self.drawn_img_list = []
         self.player_joint_list = []
         self.frame_num_list = []
-        self.empty_frame_list = []
         self.start_end_frame_list = []
 
     def get_court_info(self, img, frame_height):
@@ -93,8 +98,6 @@ class RallyProcessor(object):
             self.player_joint_list.append(filtered_outputs)
             self.frame_num_list.append(frame_num)
             frame = self.__draw_key_points(position, filtered_outputs, frame)
-        else:
-            self.empty_frame_list.append(frame_num)  # indicates that the sa is 1 but the players aren't in court
 
         self.drawn_img_list.append(frame)
 
@@ -105,20 +108,22 @@ class RallyProcessor(object):
         frame_num_list = copy.deepcopy(self.frame_num_list)
         self.drawn_img_list = []
         self.player_joint_list = []
-        self.empty_frame_list = []
+        self.frame_num_list = []
         
-        result = self.__predict_flying_direction(player_joint_list)
+        result = self.__predict_flying_direction(player_joint_list, frame_num_list)
 
         if result:
+            '''
+            determine stroke & movement
+            '''
             self.start_end_frame_list.append((rally_start_frame, rally_end_frame, self.rally_count))
-            shuttle_flying_seq, hit_frame_indices = result
+            shuttle_flying_seq, hit_frames = result
             self.rally_info = {
                     'rally count': self.rally_count,
                     'start frame': rally_start_frame,
                     'end frame': rally_end_frame,
-                    'frame nums': frame_num_list,
                     'shuttle directions': shuttle_flying_seq,
-                    'hit frames': hit_frame_indices,
+                    'hit frames': hit_frames,
                     'joints': player_joint_list
             }
             return (drawn_img_list, self.rally_info)
@@ -135,7 +140,7 @@ class RallyProcessor(object):
                 zero_count += 1
         return False if zero_count/len(shuttle_flying_seq) > 0.6 else True
 
-    def __predict_flying_direction(self, joint_sequence):
+    def __predict_flying_direction(self, joint_sequence, frame_num_list):
         if self.__check_valid_rally(joint_sequence):
             shuttle_flying_seq = list(self.__opt.predict(joint_sequence).cpu().numpy().astype(float))
         else:
@@ -143,10 +148,11 @@ class RallyProcessor(object):
         
         if self.__check_valid_sequence(shuttle_flying_seq):
             hit_frame_indices = list(self.__check_hit_frame(shuttle_flying_seq))
+            hit_frames = [frame_num_list[i] for i in hit_frame_indices]
         else:
             return False
         
-        return (shuttle_flying_seq, hit_frame_indices)
+        return (shuttle_flying_seq, hit_frames)
     
     def __check_hit_frame(self, direction_list):
         '''
@@ -173,7 +179,7 @@ class RallyProcessor(object):
                     else:
                         continue
             last_direction = direction
-        hit_frame_indices = np.array(hit_frame_indices).astype(float)
+        hit_frame_indices = hit_frame_indices
 
         return hit_frame_indices
 

@@ -2,7 +2,6 @@ from ai_coach import AICoach
 from param_parser import parameter_parser
 import yaml
 
-
 def main():
     args = parameter_parser()
 
