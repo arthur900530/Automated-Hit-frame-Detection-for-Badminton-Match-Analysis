@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Chien"
+  given-names: "Yu-Hang"
+  orcid: "https://orcid.org/0000-0002-7334-327X"
+- family-names: "Yu"
+  given-names: "Fang"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "Transformer-on-Shuttlecock-Flying-Direction-Prediction-for-Hit-frame-Detection"
+version: 1.0.0
+doi: 10.5281/zenodo.1234
+date-released: 2023-07-23
+url: "https://github.com/arthur900530/Transformer-on-Shuttlecock-Flying-Direction-Prediction-for-Hit-frame-Detection"
