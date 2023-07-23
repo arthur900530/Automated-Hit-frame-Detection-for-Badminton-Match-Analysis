@@ -131,7 +131,7 @@ class RallyProcessor(object):
             return False
     
     def __check_valid_rally(self, joint_sequence):
-        return False if len(joint_sequence) < 10 else True
+        return False if len(joint_sequence) < 25 else True
     
     def __check_valid_sequence(self, shuttle_flying_seq):
         zero_count = 0

@@ -44,8 +44,8 @@ class SACNNContainer(object):
         self.model.load_state_dict(torch.load(self.args['sacnn_path']))
         self.model.eval()
 
-    def predict(self, batch):
-        batch = self.preprocess(batch)
+    def predict(self, batch, processed=False):
+        batch = self.preprocess(batch) if not processed else batch
         out = self.model(batch)
         predicted = torch.argmax(out, dim=1)
         return predicted.item()

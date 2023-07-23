@@ -15,7 +15,7 @@ class OptimusPrime(nn.Module):
 
         # LAYERS
         self.xy_embedding = CoordinateEmbedding(in_channels=34, emb_size=dim_model)
-
+        
         encoder_layers = TransformerEncoderLayer(dim_model, num_heads, dim_feedforward, dropout_p)
         self.transformer_encoder = TransformerEncoder(encoder_layers, num_encoder_layers)
 
@@ -41,7 +41,7 @@ class OptimusPrime(nn.Module):
         PAD_array = torch.tensor(PAD_array).squeeze(0).to(device)
         for i in range(matrix.shape[0]):
             for j in range(matrix.shape[1]):
-                a = matrix[i][j]
+                a = matrix[i][j].to(device)
                 src_pad_mask.append(torch.equal(a, PAD_array))
         src_pad_mask = torch.tensor(src_pad_mask).unsqueeze(0).reshape(matrix.shape[0], -1).to(device)
         return src_pad_mask
@@ -79,9 +79,9 @@ class OptimusPrimeContainer(object):
         input_sequence = torch.tensor(np.array(temp)).unsqueeze(0).to(torch.float32).to(self.device)
         return input_sequence
 
-    def predict(self, input_sequence):
+    def predict(self, input_sequence, scaled=False):
         # Get source mask
-        input_sequence = self.__scale(input_sequence)
+        input_sequence = self.__scale(input_sequence) if not scaled else input_sequence
         src_pad_mask = self.model.create_src_pad_mask(input_sequence)
         pred = self.model(input_sequence, src_pad_mask=src_pad_mask)
         pred_indices = torch.max(pred.detach(), 2).indices.squeeze(-1)

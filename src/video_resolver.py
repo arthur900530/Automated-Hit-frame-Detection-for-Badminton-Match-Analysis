@@ -1,6 +1,6 @@
 from models.sacnn import SACNNContainer
 from rally_processor import RallyProcessor
-import utils
+from utils.utils import get_path, check_dir
 from PIL import Image
 import cv2
 import json
@@ -90,7 +90,7 @@ class VideoResolver(object):
                        f"{self.args['rally_save_path']}/"]
         resolved = True
         for dir in output_dirs:
-            resolved_dir = utils.check_dir(dir)
+            resolved_dir = check_dir(dir)
             if not resolved_dir:
                 resolved = False
         self.video_save_path = output_dirs[3]
@@ -105,7 +105,7 @@ class VideoResolver(object):
         self.__rally_processor = RallyProcessor(self.model_args)
 
     def __setup_videos(self):
-        self.__video_paths = utils.get_path(self.args['video_directory'])
+        self.__video_paths = get_path(self.args['video_directory'])
 
     def __create_video(self, out, drawn_img_list):
         for i in range(len(drawn_img_list)):

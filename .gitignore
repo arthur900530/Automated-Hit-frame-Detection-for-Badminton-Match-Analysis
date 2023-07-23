@@ -9,16 +9,19 @@ opt_val_data/
 src/OPT_Inferencing.ipynb
 src/new_seq_labling.ipynb
 src/Training OPT.ipynb
-outputs/joints
-outputs/videos
-outputs/rallies
+# outputs/joints/
+# outputs/videos/
+# outputs/rallies/
+outputs/woman
 ################################################
 src/.ipynb_checkpoints/
 src/__pycache__
-src/eval.ipynb
+# src/eval.ipynb
 src/models/weights/court_kpRCNN.pth
 src/models/weights/kpRCNN.pth
 src/models/weights/OPT*
+src/stroke_and_movement
+datasets
 ################################################
 *.rsuser
 *.suo
