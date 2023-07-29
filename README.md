@@ -1,4 +1,4 @@
-# Trandformer-and-RCNN-on-Badminton-Stroke-Direction-Identification
+# Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection
 This repo contains official implementation of <strong>Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection</strong>.
 The main contributions of our work are to:
   - Utilize the interchange of shot angle to trim rally-wise frames from raw badminton video.
