@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-# Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection
-This repository stores the code that aims to advance sport science in badminton, providing a systematic approach to generate stroke & player movement sequences automatically from game videos using modern AI techniques. A deep evaluation on BWF records can then be conducted.
-CNN and Keypoint R-CNN models are applied to extract frames, and collect court and player information. Moreover, a Transformer model to transform player joint sequences to shuttlecock direction sequences.
-=======
 # Trandformer-and-RCNN-on-Badminton-Stroke-Direction-Identification
 This repo contains official implementation of <strong>Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection</strong>.
 The main contributions of our work are to:
@@ -10,7 +5,6 @@ The main contributions of our work are to:
   - Proposed a novel transformer that predicts shuttlecock direction sequences based on player keypoint sequence.
   - Designed and developed the first-ever automated hit-frame detection tool to bridge the gap between raw badminton videos and analyzable data.
 
->>>>>>> 4f88462 (update readme)
 ## Environment Requirements
 ```
 opencv-python == 4.7.0.72
