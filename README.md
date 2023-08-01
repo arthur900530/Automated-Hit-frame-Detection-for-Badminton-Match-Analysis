@@ -4,6 +4,7 @@ The main contributions of our work are to:
   - Utilize the interchange of shot angle to trim rally-wise frames from raw badminton video.
   - Proposed a novel transformer that predicts shuttlecock direction sequences based on player keypoint sequence.
   - Designed and developed the first-ever automated hit-frame detection tool to bridge the gap between raw badminton videos and analyzable data.
+Paper: https://arxiv.org/abs/2307.16000
 
 ## Environment Requirements
 ```
