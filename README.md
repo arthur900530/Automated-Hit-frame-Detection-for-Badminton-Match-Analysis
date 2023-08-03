@@ -1,5 +1,5 @@
-# Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection
-This repo contains official implementation of <strong>Transformer on Shuttlecock Flying Direction Prediction for Hit-frame Detection</strong>.
+# Automated Hit-frame Detection for Badminton Match Analysis
+This repo contains official implementation of <strong>Automated Hit-frame Detection for Badminton Match Analysis</strong>.
 The main contributions of our work are to:
   - Utilize the interchange of shot angle to trim rally-wise frames from raw badminton video.
   - Proposed a novel transformer that predicts shuttlecock direction sequences based on player keypoint sequence.
