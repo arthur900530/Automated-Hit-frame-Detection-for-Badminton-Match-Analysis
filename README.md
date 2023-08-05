@@ -5,11 +5,11 @@ The main contributions of our work are to:
   - Proposed a novel transformer that predicts shuttlecock direction sequences based on player keypoint sequence.
   - Designed and developed the first-ever automated hit-frame detection tool to bridge the gap between raw badminton videos and analyzable data.
 
+Paper: https://arxiv.org/abs/2307.16000
+
 Checkpoints: https://drive.google.com/drive/folders/1v-uejba2ljNRUPaSAR-9u-a9GY1mD4pu?usp=sharing
 
 Datasets: https://drive.google.com/drive/folders/1oZf7U5qx70YuNZX5Df6y1vJ_WwrMEprD?usp=sharing
-
-Paper: https://arxiv.org/abs/2307.16000
 
 ## Environment Requirements
 ```
