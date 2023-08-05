@@ -9,6 +9,7 @@ opt_val_data/
 src/OPT_Inferencing.ipynb
 src/new_seq_labling.ipynb
 src/Training OPT.ipynb
+datasets
 # outputs/joints/
 # outputs/videos/
 # outputs/rallies/
