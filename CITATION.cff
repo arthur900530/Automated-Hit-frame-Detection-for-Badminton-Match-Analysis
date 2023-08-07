@@ -7,7 +7,7 @@ authors:
 - family-names: "Yu"
   given-names: "Fang"
   orcid: "https://orcid.org/0000-0002-2776-9624"
-title: "Transformer-on-Shuttlecock-Flying-Direction-Prediction-for-Hit-frame-Detection"
+title: "Automated-Hit-frame-Detection-for-Badminton-Match-Analysis"
 version: 1.0.0
 doi: 10.5281/zenodo.1234
 date-released: 2023-07-23
